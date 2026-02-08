@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#064e3b">
+    <meta charset="UTF-8">
+    <!-- user-scalable=no se zoom feature off ho jayega -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Muttaqi Course - Ramadan 2026</title>
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+        
+        .font-urdu {
+            font-family: 'Noto Nastaliq Urdu', serif;
+            line-height: 2.2 !important;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f6f4;
+            /* Mobile touch delay fix */
+            touch-action: manipulation;
+        }
+
+        .rtl {
+            direction: rtl;
+        }
+
+        .ltr {
+            direction: ltr;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .rtl h1, .rtl h2, .rtl h3 {
+            line-height: 1.8 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // Fixed Icon component using Lucide's createIcons
+        const Icon = ({ name, className = "", size = 24, strokeWidth = 2 }) => {
+            const iconRef = useRef(null);
+            
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    const lucideName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+                    iconRef.current.innerHTML = `<i data-lucide="${lucideName}"></i>`;
+                    window.lucide.createIcons({
+                        attrs: {
+                            class: className,
+                            width: size,
+                            height: size,
+                            'stroke-width': strokeWidth
+                        }
+                    });
+                }
+            }, [name, className, size, strokeWidth]);
+
+            return <span ref={iconRef} className="inline-flex items-center justify-center" />;
+        };
+
+        const DAILY_KEYS = [
+            'tahajjud', 'roza', 'fajr_jamaat', 'yaseen', 'avoid_bad', 
+            'zuhr_jamaat', 'darood_100', 'para_recitation', 'asr_jamaat', 
+            'istighfar_100', 'maghrib_jamaat', 'isha_taraweeh', 'parents_service'
+        ];
+
+        const ASHRA_KEYS = [
+            'iftar_brother', 'sadaqah', 'kahf_friday', 'salat_tasbeeh', 'remember_death'
+        ];
+
+        const GOAL_KEYS = [
+            'quran_completion', 'learn_masail', 'itikaf_nights'
+        ];
+
+        const TRANSLATIONS = {
+            en: {
+                title: "Muttaqi Journal",
+                subtitle: "Jamiat Ulama-i-Hind",
+                day: "Din",
+                dailyTitle: "Rozana ke Maamulaat",
+                ashraTitle: "Ashre ke Kaam",
+                goalsTitle: "Aham Goals",
+                loading: "Sabr karein...",
+                yes: "Haan",
+                no: "Nahi",
+                tahajjud: "Kya Tahajjud ki namaz ada ki?",
+                roza: "Kya Roza rakha?",
+                rozaSummary: "Roza",
+                fajr_jamaat: "Kya Fajr ba-jamaat ada ki?",
+                yaseen: "Fajr ke baad Surah Yaseen parhi?",
+                avoid_bad: "Gussa, laraayi aur jhoot se bache?",
+                zuhr_jamaat: "Zuhr ba-jamaat ada ki?",
+                darood_100: "Asr ke baad 100 baar Darood?",
+                para_recitation: "Kam se kam ek Para parha?",
+                asr_jamaat: "Asr ba-jamaat ada ki?",
+                istighfar_100: "100 baar Istighfar kiya?",
+                maghrib_jamaat: "Maghrib ba-jamaat ada ki?",
+                isha_taraweeh: "Isha ba-jamaat aur Taraweeh parhi?",
+                parents_service: "Kya walidain ki khidmat ki?",
+                iftar_brother: "Kisi ko iftar karaya?",
+                sadaqah: "Sadaqah diya?",
+                kahf_friday: "Surah Kahf parhi?",
+                salat_tasbeeh: "Salat-ut-Tasbeeh ada ki?",
+                remember_death: "Maut ko yaad kiya?",
+                quran_completion: "Quran mukammal kiya?",
+                learn_masail: "Wudhu/Namaz ke masail seekhe?",
+                itikaf_nights: "Laylatul Qadr mein ibadat ki?",
+                summary: "Journal Summary",
+                completed: "Mukammal",
+                answered: "Sawaalat"
+            },
+            ur: {
+                title: "متقی کورس",
+                subtitle: "جمعیت علماء ہند - رمضان ڈائری",
+                day: "دن",
+                dailyTitle: "روزمرہ کے معمولات",
+                ashraTitle: "عشرے کے کام",
+                goalsTitle: "اہم اہداف",
+                loading: "بسم اللہ...",
+                yes: "جی ہاں",
+                no: "جی نہیں",
+                tahajjud: "کیا میں نے تہجد کی نماز ادا کی؟",
+                roza: "کیا میں نے روزہ رکھا؟",
+                rozaSummary: "روزہ",
+                fajr_jamaat: "کیا میں نے فجر باجماعت ادا کی؟",
+                yaseen: "فجر کے بعد سورہ یٰسین کی تلاوت؟",
+                avoid_bad: "لڑائی، گالی اور جھوٹ سے اجتناب؟",
+                zuhr_jamaat: "کیا میں نے ظہر باجماعت ادا کی؟",
+                darood_100: "عصر کے بعد 100 مرتبہ درود پاک؟",
+                para_recitation: "کیا کم از کم ایک پارے کی تلاوت کی؟",
+                asr_jamaat: "کیا میں نے عصر باجماعت ادا کی؟",
+                istighfar_100: "دن میں 100 مرتبہ استغفار کیا؟",
+                maghrib_jamaat: "کیا میں نے مغرب باجماعت ادا کی؟",
+                isha_taraweeh: "عشاء باجماعت اور تراویح پڑھی؟",
+                parents_service: "کیا میں نے والدین کی خدمت کی؟",
+                iftar_brother: "کسی بھائی کو افطار کرایا؟",
+                sadaqah: "اللہ کے راستے میں صدقہ کیا؟",
+                kahf_friday: "جمعہ کے دن سورہ کہف کی تلاوت؟",
+                salat_tasbeeh: "کیا صلاۃ التسبیح ادا کی؟",
+                remember_death: "ایصالِ ثواب اور موت کو یاد کیا؟",
+                quran_completion: "کیا ایک قرآن پاک مکمل کیا؟",
+                learn_masail: "غسل، وضو اور نماز کے مسائل سیکھے؟",
+                itikaf_nights: "طاق راتوں میں سنت کے مطابق عبادت؟",
+                summary: "مجموعی کارکردگی",
+                completed: "مکمل",
+                answered: "جوابات"
+            }
+        };
+
+        const STORAGE_KEY = 'muttaqi_official_v2';
+        const LAST_DAY_KEY = 'muttaqi_last_day';
+
+        const GeometricPattern = () => (
+            <svg className="absolute inset-0 w-full h-full opacity-[0.05] pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 20 10 L 10 20 L 0 10 Z" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                    <circle cx="10" cy="10" r="1" fill="currentColor" />
+                </pattern>
+                <rect width="100" height="100" fill="url(#grid)" />
+            </svg>
+        );
+
+        function App() {
+            const [currentDay, setCurrentDay] = useState(1);
+            const [lang, setLang] = useState('en'); 
+            const [data, setData] = useState({}); 
+            const [loading, setLoading] = useState(true);
+
+            const t = TRANSLATIONS[lang];
+            const isRTL = lang === 'ur';
+
+            useEffect(() => {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    try { setData(JSON.parse(savedData)); } catch (e) { console.error(e); }
+                }
+                
+                const savedDay = localStorage.getItem(LAST_DAY_KEY);
+                if (savedDay) {
+                    const dayInt = parseInt(savedDay);
+                    if (dayInt >= 1 && dayInt <= 30) setCurrentDay(dayInt);
+                }
+                
+                const savedLang = localStorage.getItem('muttaqi_lang');
+                if (savedLang) setLang(savedLang);
+                
+                setLoading(false);
+            }, []);
+
+            useEffect(() => {
+                if (!loading) localStorage.setItem(LAST_DAY_KEY, currentDay);
+            }, [currentDay, loading]);
+
+            useEffect(() => {
+                if (!loading) localStorage.setItem('muttaqi_lang', lang);
+            }, [lang, loading]);
+
+            const setItemState = (day, key, value) => {
+                const updatedDayData = { ...(data[day] || {}), [key]: value };
+                const newData = { ...data, [day]: updatedDayData };
+                setData(newData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+            };
+
+            const stats = useMemo(() => {
+                let rozas = 0, taraweeh = 0, totalYes = 0;
+                Object.values(data).forEach(day => {
+                    if (day.roza === true) rozas++;
+                    if (day.isha_taraweeh === true) taraweeh++;
+                    [...DAILY_KEYS, ...ASHRA_KEYS, ...GOAL_KEYS].forEach(k => {
+                        if (day[k] === true) totalYes++;
+                    });
+                });
+                return { rozas, taraweeh, totalYes };
+            }, [data]);
+
+            const dayProgress = useMemo(() => {
+                const current = data[currentDay] || {};
+                const dailyCount = DAILY_KEYS.filter(k => current[k] === true).length;
+                const answeredCount = DAILY_KEYS.filter(k => current[k] !== undefined).length;
+                return {
+                    percent: Math.round((dailyCount / DAILY_KEYS.length) * 100),
+                    answered: answeredCount
+                };
+            }, [data, currentDay]);
+
+            if (loading) return (
+                <div className="min-h-screen bg-[#052e24] flex items-center justify-center">
+                    <div className="text-center">
+                        <Icon name="Moon" size={64} className="text-emerald-400 animate-pulse mb-4" />
+                        <p className="text-emerald-100/50 font-bold uppercase tracking-widest text-[10px]">{t.loading}</p>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className={`min-h-screen bg-[#f1f6f4] text-[#0a1f1a] pb-20 selection:bg-emerald-100 ${isRTL ? 'rtl font-urdu' : 'ltr font-sans'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                    <header className="relative bg-[#064e3b] text-white pt-12 pb-24 px-6 rounded-b-[4rem] shadow-2xl overflow-hidden border-b-4 border-yellow-500/20">
+                        <GeometricPattern />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/10 rounded-full blur-[100px] -mr-32 -mt-32" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/10 rounded-full blur-[100px] -ml-32 -mb-32" />
+
+                        <div className="max-w-2xl mx-auto relative z-10">
+                            <div className="flex justify-between items-center mb-10">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Icon name="Star" size={16} className="text-yellow-400 fill-yellow-400" />
+                                        <span className={`text-emerald-300 uppercase font-black tracking-[0.2em] ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>{t.subtitle}</span>
+                                    </div>
+                                    <h1 className={`font-black tracking-tight ${isRTL ? 'text-4xl' : 'text-4xl'}`}>{t.title}</h1>
+                                </div>
+                                <button 
+                                    onClick={() => setLang(lang === 'en' ? 'ur' : 'en')} 
+                                    className="bg-white/10 hover:bg-white/20 active:scale-95 px-5 py-2 rounded-2xl border border-white/10 text-xs font-black backdrop-blur-md transition-all uppercase tracking-widest flex items-center gap-2"
+                                >
+                                    <Icon name="Languages" size={14} />
+                                    {lang === 'en' ? 'Roman' : 'Urdu'}
+                                </button>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-2xl rounded-[3rem] p-8 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-300 to-amber-500 text-emerald-950 rounded-[1.75rem] flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)] font-black text-3xl pt-1">
+                                            {currentDay}
+                                        </div>
+                                        <div>
+                                            <h2 className={`font-black ${isRTL ? 'text-2xl pt-2' : 'text-2xl'}`}>Ramadan 2026</h2>
+                                            <p className={`text-emerald-300/60 font-bold uppercase tracking-widest ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>Digital Maamulaat Tracker</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-4xl font-black tracking-tighter">{dayProgress.percent}%</div>
+                                        <div className={`font-bold text-emerald-300 uppercase tracking-tighter opacity-70 ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>
+                                           {dayProgress.answered} / {DAILY_KEYS.length} {t.answered}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="relative w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                                    <div 
+                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-amber-400 rounded-full transition-all duration-1000 ease-out" 
+                                        style={{ width: `${dayProgress.percent}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-2xl mx-auto px-4 -mt-12 space-y-12 relative z-20">
+                        <section className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-4 flex overflow-x-auto no-scrollbar gap-3 border border-white/50">
+                            {Array.from({ length: 30 }, (_, i) => i + 1).map(d => (
+                                <button 
+                                    key={d} 
+                                    onClick={() => setCurrentDay(d)} 
+                                    className={`flex-shrink-0 w-14 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-300 group
+                                        ${currentDay === d 
+                                            ? 'bg-[#064e3b] text-white shadow-xl shadow-emerald-900/30 scale-105' 
+                                            : 'bg-emerald-50 text-emerald-900/30 hover:bg-emerald-100 hover:text-emerald-900'}`}
+                                >
+                                    <span className="text-xl font-black">{d}</span>
+                                </button>
+                            ))}
+                        </section>
+
+                        <div className="space-y-16">
+                            <section className="space-y-6">
+                                <div className="flex items-center gap-4 px-2">
+                                    <div className="p-3 rounded-2xl bg-emerald-100/50 text-emerald-600 shadow-sm"><Icon name="Calendar" /></div>
+                                    <h3 className={`font-black text-slate-800 tracking-tight ${isRTL ? 'text-3xl pt-3' : 'text-2xl'}`}>{t.dailyTitle}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {DAILY_KEYS.map(key => (
+                                        <QuestionCard key={key} label={t[key]} value={data[currentDay]?.[key]} onChange={(val) => setItemState(currentDay, key, val)} t={t} isRTL={isRTL} />
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="space-y-6">
+                                <div className="flex items-center gap-4 px-2">
+                                    <div className="p-3 rounded-2xl bg-amber-100/50 text-amber-600 shadow-sm"><Icon name="Zap" /></div>
+                                    <h3 className={`font-black text-slate-800 tracking-tight ${isRTL ? 'text-3xl pt-3' : 'text-2xl'}`}>{t.ashraTitle}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {ASHRA_KEYS.map(key => (
+                                        <QuestionCard key={key} label={t[key]} value={data[currentDay]?.[key]} onChange={(val) => setItemState(currentDay, key, val)} t={t} isRTL={isRTL} />
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="space-y-6">
+                                <div className="flex items-center gap-4 px-2">
+                                    <div className="p-3 rounded-2xl bg-blue-100/50 text-blue-600 shadow-sm"><Icon name="Target" /></div>
+                                    <h3 className={`font-black text-slate-800 tracking-tight ${isRTL ? 'text-3xl pt-3' : 'text-2xl'}`}>{t.goalsTitle}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {GOAL_KEYS.map(key => (
+                                        <QuestionCard key={key} label={t[key]} value={data[currentDay]?.[key]} onChange={(val) => setItemState(currentDay, key, val)} t={t} isRTL={isRTL} />
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+
+                        <section className="bg-[#0a1f1a] rounded-[3.5rem] p-10 shadow-2xl text-white relative overflow-hidden">
+                            <GeometricPattern />
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-10">
+                                    <div>
+                                        <h3 className={`font-black tracking-tight ${isRTL ? 'text-3xl pt-2' : 'text-3xl'}`}>{t.summary}</h3>
+                                        <p className={`text-emerald-400/50 font-bold uppercase tracking-widest mt-1 ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>Your Spiritual Progress</p>
+                                    </div>
+                                    <div className="bg-emerald-400/10 p-4 rounded-3xl">
+                                        <Icon name="BarChart3" size={32} className="text-emerald-400" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="p-5 rounded-[2rem] border bg-emerald-400/10 text-emerald-400 border-emerald-400/20 text-center flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105">
+                                        <div className="opacity-40 mb-2"><Icon name="Sun" size={14} /></div>
+                                        <span className="text-3xl font-black leading-none tracking-tighter">{stats.rozas}<span className="text-xs opacity-30 ml-1 font-bold">/30</span></span>
+                                        <span className={`font-black uppercase tracking-widest mt-2 opacity-60 leading-tight ${isRTL ? 'text-[11px]' : 'text-[9px]'}`}>{t.rozaSummary}</span>
+                                    </div>
+                                    <div className="p-5 rounded-[2rem] border bg-amber-400/10 text-amber-400 border-amber-400/20 text-center flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105">
+                                        <div className="opacity-40 mb-2"><Icon name="Moon" size={14} /></div>
+                                        <span className="text-3xl font-black leading-none tracking-tighter">{stats.taraweeh}</span>
+                                        <span className={`font-black uppercase tracking-widest mt-2 opacity-60 leading-tight ${isRTL ? 'text-[11px]' : 'text-[9px]'}`}>Taraweeh</span>
+                                    </div>
+                                    <div className="p-5 rounded-[2rem] border bg-blue-400/10 text-blue-400 border-blue-400/20 text-center flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105">
+                                        <div className="opacity-40 mb-2"><Icon name="Award" size={14} /></div>
+                                        <span className="text-3xl font-black leading-none tracking-tighter">{stats.totalYes}</span>
+                                        <span className={`font-black uppercase tracking-widest mt-2 opacity-60 leading-tight ${isRTL ? 'text-[11px]' : 'text-[9px]'}`}>Total</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    <footer className="py-12 text-center">
+                        <div className="w-12 h-1 bg-emerald-100 mx-auto rounded-full mb-6 opacity-50" />
+                        <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.5em] leading-none">Muttaqi Digital Journal • Jamiat Course</p>
+                        <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest mt-2 opacity-50">Ramadan Mubarak 1447H / 2026</p>
+                        <div className="mt-4 text-emerald-600/60 text-[10px] font-bold uppercase tracking-widest">
+                            Designed By Zaid Bastawala
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        function QuestionCard({ label, value, onChange, t, isRTL }) {
+            return (
+                <div className="group bg-white rounded-[2.5rem] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100/50 flex flex-col gap-6 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-900/5">
+                    <p className={`font-black text-slate-700 leading-[1.4] transition-colors group-hover:text-emerald-950 ${isRTL ? 'text-2xl text-right pt-2' : 'text-xl text-left'}`}>
+                        {label}
+                    </p>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => onChange(true)}
+                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border-2
+                                ${value === true 
+                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-xl shadow-emerald-900/20' 
+                                    : 'bg-slate-50 border-slate-50 text-emerald-600/50 hover:bg-emerald-50 hover:text-emerald-600'}`}
+                        >
+                            <Icon name="Check" size={20} strokeWidth={4} /> {t.yes}
+                        </button>
+                        <button 
+                            onClick={() => onChange(false)}
+                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border-2
+                                ${value === false 
+                                    ? 'bg-rose-500 border-rose-500 text-white shadow-xl shadow-rose-900/20' 
+                                    : 'bg-slate-50 border-slate-50 text-rose-500/50 hover:bg-rose-50 hover:text-rose-500'}`}
+                        >
+                            <Icon name="X" size={20} strokeWidth={4} /> {t.no}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
+
