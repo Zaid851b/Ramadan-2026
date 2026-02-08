@@ -4,7 +4,6 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#064e3b">
     <meta charset="UTF-8">
-    <!-- user-scalable=no se zoom feature off ho jayega -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Muttaqi Course - Ramadan 2026</title>
     
@@ -29,29 +28,19 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f1f6f4;
-            /* Mobile touch delay fix */
             touch-action: manipulation;
         }
 
-        .rtl {
-            direction: rtl;
-        }
+        .rtl { direction: rtl; }
+        .ltr { direction: ltr; }
 
-        .ltr {
-            direction: ltr;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .rtl h1, .rtl h2, .rtl h3 {
-            line-height: 1.8 !important;
-        }
+        .rtl h1, .rtl h2, .rtl h3 { line-height: 1.8 !important; }
+        
+        /* Button scale effect */
+        .active-scale:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -60,7 +49,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // Fixed Icon component using Lucide's createIcons
+        // Optimized Icon component
         const Icon = ({ name, className = "", size = 24, strokeWidth = 2 }) => {
             const iconRef = useRef(null);
             
@@ -79,7 +68,7 @@
                 }
             }, [name, className, size, strokeWidth]);
 
-            return <span ref={iconRef} className="inline-flex items-center justify-center" />;
+            return <span ref={iconRef} className="inline-flex items-center justify-center pointer-events-none" />;
         };
 
         const DAILY_KEYS = [
@@ -107,6 +96,8 @@
                 loading: "Sabr karein...",
                 yes: "Haan",
                 no: "Nahi",
+                resetToday: "Reset Aaj",
+                confirmReset: "Kya aap aaj ka data clear karna chahte hain?",
                 tahajjud: "Kya Tahajjud ki namaz ada ki?",
                 roza: "Kya Roza rakha?",
                 rozaSummary: "Roza",
@@ -143,6 +134,8 @@
                 loading: "بسم اللہ...",
                 yes: "جی ہاں",
                 no: "جی نہیں",
+                resetToday: "آج کا ڈیٹا صاف کریں",
+                confirmReset: "کیا آپ آج کا ڈیٹا صاف کرنا چاہتے ہیں؟",
                 tahajjud: "کیا میں نے تہجد کی نماز ادا کی؟",
                 roza: "کیا میں نے روزہ رکھا؟",
                 rozaSummary: "روزہ",
@@ -226,6 +219,15 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
             };
 
+            const resetCurrentDay = () => {
+                if (window.confirm(t.confirmReset)) {
+                    const newData = { ...data };
+                    newData[currentDay] = {}; // Reset current day to empty object
+                    setData(newData);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+                }
+            };
+
             const stats = useMemo(() => {
                 let rozas = 0, taraweeh = 0, totalYes = 0;
                 Object.values(data).forEach(day => {
@@ -275,7 +277,7 @@
                                 </div>
                                 <button 
                                     onClick={() => setLang(lang === 'en' ? 'ur' : 'en')} 
-                                    className="bg-white/10 hover:bg-white/20 active:scale-95 px-5 py-2 rounded-2xl border border-white/10 text-xs font-black backdrop-blur-md transition-all uppercase tracking-widest flex items-center gap-2"
+                                    className="bg-white/10 hover:bg-white/20 active-scale px-5 py-2 rounded-2xl border border-white/10 text-xs font-black backdrop-blur-md transition-all uppercase tracking-widest flex items-center gap-2"
                                 >
                                     <Icon name="Languages" size={14} />
                                     {lang === 'en' ? 'Roman' : 'Urdu'}
@@ -283,7 +285,7 @@
                             </div>
 
                             <div className="bg-white/5 backdrop-blur-2xl rounded-[3rem] p-8 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex justify-between items-start mb-6">
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 bg-gradient-to-br from-yellow-300 to-amber-500 text-emerald-950 rounded-[1.75rem] flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)] font-black text-3xl pt-1">
                                             {currentDay}
@@ -293,11 +295,19 @@
                                             <p className={`text-emerald-300/60 font-bold uppercase tracking-widest ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>Digital Maamulaat Tracker</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right flex flex-col items-end">
                                         <div className="text-4xl font-black tracking-tighter">{dayProgress.percent}%</div>
                                         <div className={`font-bold text-emerald-300 uppercase tracking-tighter opacity-70 ${isRTL ? 'text-[12px]' : 'text-[10px]'}`}>
-                                           {dayProgress.answered} / {DAILY_KEYS.length} {t.answered}
+                                           {dayProgress.answered} / {DAILY_KEYS.length}
                                         </div>
+                                        
+                                        <button 
+                                            onClick={resetCurrentDay}
+                                            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 rounded-full text-[10px] font-black transition-all border border-rose-500/30 active-scale"
+                                        >
+                                            <Icon name="RotateCcw" size={10} strokeWidth={3} />
+                                            {t.resetToday}
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="relative w-full h-3 bg-white/10 rounded-full overflow-hidden">
@@ -316,7 +326,7 @@
                                 <button 
                                     key={d} 
                                     onClick={() => setCurrentDay(d)} 
-                                    className={`flex-shrink-0 w-14 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-300 group
+                                    className={`flex-shrink-0 w-14 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-300 active-scale
                                         ${currentDay === d 
                                             ? 'bg-[#064e3b] text-white shadow-xl shadow-emerald-900/30 scale-105' 
                                             : 'bg-emerald-50 text-emerald-900/30 hover:bg-emerald-100 hover:text-emerald-900'}`}
@@ -419,7 +429,7 @@
                     <div className="flex gap-4">
                         <button 
                             onClick={() => onChange(true)}
-                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border-2
+                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active-scale border-2
                                 ${value === true 
                                     ? 'bg-emerald-600 border-emerald-600 text-white shadow-xl shadow-emerald-900/20' 
                                     : 'bg-slate-50 border-slate-50 text-emerald-600/50 hover:bg-emerald-50 hover:text-emerald-600'}`}
@@ -428,7 +438,7 @@
                         </button>
                         <button 
                             onClick={() => onChange(false)}
-                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border-2
+                            className={`flex-1 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-all active-scale border-2
                                 ${value === false 
                                     ? 'bg-rose-500 border-rose-500 text-white shadow-xl shadow-rose-900/20' 
                                     : 'bg-slate-50 border-slate-50 text-rose-500/50 hover:bg-rose-50 hover:text-rose-500'}`}
@@ -447,7 +457,7 @@
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
-</script>
+</script>    
 </body>
 </html>
 
